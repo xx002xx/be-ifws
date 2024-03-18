@@ -25,17 +25,11 @@ app.use(bodyParser.json());
 app.use(verifyToken);
 
 // Routes
-const akunRoutes = require("../routes/akunRoutes");
+const akunRoutes = require("../routes/akunRoutes"); // done
 const roleRoutes = require("../routes/roleRoutes"); // done
-const dashboardRoutes = require("../routes/dashboardRoutes");
-const aksesDashboardRoutes = require("../routes/aksesDashboardRoutes");
-const categoryRoutes = require("../routes/categoryRoutes");
 
 app.use("/akun", akunRoutes);
 app.use("/roles", roleRoutes);
-app.use("/dashboards", dashboardRoutes);
-app.use("/akses-dashboard", aksesDashboardRoutes);
-app.use("/category", categoryRoutes);
 
 // Starting server
 const PORT = process.env.PORT || 3300;
