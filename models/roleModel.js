@@ -34,11 +34,25 @@ class RoleModel {
     }
   }
 
-  static async getAllRolesData() {
+  static async getAllRolesData(page, limit) {
     try {
-      const query = "SELECT * FROM role";
-      const result = await new Promise((resolve, reject) => {
+      const query = "SELECT COUNT(*) as total FROM role"; // Hitung total data
+      const countResult = await new Promise((resolve, reject) => {
         pool.query(query, (error, results, fields) => {
+          if (error) {
+            reject(error);
+          } else {
+            resolve(results[0].total);
+          }
+        });
+      });
+
+      const total = countResult;
+      const offset = (page - 1) * limit;
+
+      const queryData = `SELECT * FROM role LIMIT ${limit} OFFSET ${offset}`;
+      const dataResult = await new Promise((resolve, reject) => {
+        pool.query(queryData, (error, results, fields) => {
           if (error) {
             reject(error);
           } else {
@@ -46,15 +60,8 @@ class RoleModel {
           }
         });
       });
-      const roles = result;
 
-      if (!roles || roles.length === 0) {
-        throw new Error("No roles found in the database");
-      }
-
-      const total = roles.length;
-
-      return { total, items: roles };
+      return { total, items: dataResult };
     } catch (error) {
       console.error("Error getting all roles", error);
       throw new Error("Database error");

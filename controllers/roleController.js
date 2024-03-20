@@ -39,11 +39,20 @@ class RoleController {
 
   static async getAllRolesData(req, res) {
     try {
-      const allRoles = await RoleModel.getAllRolesData();
-      res.json(allRoles);
+      const page = parseInt(req.query.page) || 1;
+      const limit = parseInt(req.query.limit) || 5;
+
+      const rolesData = await RoleModel.getAllRolesData(page, limit);
+
+      const total = rolesData.total;
+      const items = rolesData.items;
+
+      const totalPages = Math.ceil(total / limit); // Hitung total halaman
+
+      res.status(200).json({ total, totalPages, items });
     } catch (error) {
       console.error("Error getting all roles", error);
-      res.status(500).json({ error: "Internal Server Error" });
+      res.status(500).json({ error: "Internal server error" });
     }
   }
 
