@@ -27,9 +27,13 @@ app.use(verifyToken);
 // Routes
 const akunRoutes = require("../routes/akunRoutes"); // done
 const roleRoutes = require("../routes/roleRoutes"); // done
+const panitiaRoutes = require("../routes/panitiaRoutes"); // done
+const semesterRoutes = require("../routes/semesterRoutes"); // done
 
 app.use("/akun", akunRoutes);
 app.use("/roles", roleRoutes);
+app.use("/panitia", panitiaRoutes);
+app.use("/semester", semesterRoutes);
 
 // Starting server
 const PORT = process.env.PORT || 3300;

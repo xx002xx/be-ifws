@@ -7,10 +7,9 @@ class UserModel {
   static async getAllUsers() {
     try {
       const client = await pool.connect();
-      const result =
-        await client.query(`SELECT tb_user.username, tb_user.nama, tb_user.email, tb_role.nama_role, tb_role.id_role, tb_user.status
-      FROM tb_user
-      JOIN tb_role ON tb_user.id_role = tb_role.id_role`);
+      const result = await client.query(`SELECT a.*, b.nm_role
+      FROM akun a
+      JOIN role b ON a.id_role = b.id_role`);
       client.release();
 
       const users = result.rows;
@@ -22,25 +21,58 @@ class UserModel {
     }
   }
 
+  static async getAllUserData(page, limit) {
+    try {
+      const query = "SELECT COUNT(*) as total FROM akun"; // Hitung total data
+      const countResult = await new Promise((resolve, reject) => {
+        pool.query(query, (error, results, fields) => {
+          if (error) {
+            reject(error);
+          } else {
+            resolve(results[0].total);
+          }
+        });
+      });
+
+      const total = countResult;
+      const offset = (page - 1) * limit;
+
+      const queryData = `SELECT a.*, b.nm_role
+      FROM akun a
+      JOIN role b ON a.id_role = b.id_role LIMIT ${limit} OFFSET ${offset}`;
+      const dataResult = await new Promise((resolve, reject) => {
+        pool.query(queryData, (error, results, fields) => {
+          if (error) {
+            reject(error);
+          } else {
+            resolve(results);
+          }
+        });
+      });
+
+      return { total, items: dataResult };
+    } catch (error) {
+      console.error("Error getting all roles", error);
+      throw new Error("Database error");
+    }
+  }
+
   static async getUserByUsername(username) {
     try {
-      const client = await pool.connect();
-      const result = await client.query(
-        "SELECT * FROM tb_user WHERE username like $1 || '%'",
-        [username]
-      );
-      client.release();
-      const user = result.rows[0]; // Ambil baris pertama dari hasil query
-
-      // Ubah format menjadi objek dengan properti 'total' dan 'items'
-      const formattedResult = {
-        total: result.rowCount, // Jumlah total baris yang ditemukan
-        items: user ? [user] : [], // Jika user ditemukan, masukkan ke dalam array, jika tidak, buat array kosong
-      };
-
-      return formattedResult;
+      const query = "SELECT * FROM akun where username = ?";
+      const result = await new Promise((resolve, reject) => {
+        pool.query(query, [username], (error, results, fields) => {
+          if (error) {
+            reject(error);
+          } else {
+            resolve(results);
+          }
+        });
+      });
+      return result;
     } catch (error) {
-      throw new Error(error.message);
+      console.error("Error getting all roles:", error);
+      throw new Error("Database error:", error.message);
     }
   }
 
@@ -184,15 +216,13 @@ class UserModel {
 
   static async deleteUser(username) {
     try {
-      const client = await pool.connect();
-      const result = await client.query(
-        "DELETE FROM tb_user WHERE username = $1",
-        [username]
-      );
-      client.release();
-      return { statusCode: 200, message: "User berhasil dihapus" };
+      const query = "DELETE FROM akun WHERE username = ?";
+      const result = await pool.query(query, [username]);
+
+      return { success: true, message: "akun delete successfully" };
     } catch (error) {
-      throw new Error(error.message);
+      console.error("Error delete akun:", error);
+      throw new Error("Database error: " + error.message);
     }
   }
 }

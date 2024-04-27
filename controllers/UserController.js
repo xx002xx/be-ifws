@@ -24,6 +24,24 @@ class UserController {
     }
   }
 
+  static async getAllUserData(req, res) {
+    try {
+      const page = parseInt(req.query.page) || 1;
+      const limit = parseInt(req.query.limit) || 5;
+
+      const PanitiasData = await UserModel.getAllUserData(page, limit);
+
+      const total = PanitiasData.total;
+      const items = PanitiasData.items;
+
+      const totalPages = Math.ceil(total / limit); // Hitung total halaman
+
+      res.status(200).json({ total, totalPages, items });
+    } catch (error) {
+      console.error("Error getting all Panitias", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  }
   static async createUser(req, res) {
     try {
       const userData = req.body;
@@ -62,12 +80,13 @@ class UserController {
   }
 
   static async deleteUser(req, res) {
+    const idPanitia = req.params.username;
     try {
-      const username = req.params.username;
-      const deleteResult = await UserModel.deleteUser(username);
-      res.status(204).json({ message: deleteResult.message });
+      const deletedPanitia = await UserModel.deleteUser(idPanitia);
+      res.json(deletedPanitia);
     } catch (error) {
-      res.status(500).json({ error: error.message });
+      console.error("Error deleting Panitia", error);
+      res.status(500).json({ error: "Internal Server Error" });
     }
   }
 
