@@ -29,11 +29,13 @@ const akunRoutes = require("../routes/akunRoutes"); // done
 const roleRoutes = require("../routes/roleRoutes"); // done
 const panitiaRoutes = require("../routes/panitiaRoutes"); // done
 const semesterRoutes = require("../routes/semesterRoutes"); // done
+const kegiatanRoutes = require("../routes/kegiatanRoutes");
 
 app.use("/akun", akunRoutes);
 app.use("/roles", roleRoutes);
 app.use("/panitia", panitiaRoutes);
 app.use("/semester", semesterRoutes);
+app.use("/kegiatan", kegiatanRoutes);
 
 // Starting server
 const PORT = process.env.PORT || 3300;
