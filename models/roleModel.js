@@ -34,7 +34,7 @@ class RoleModel {
     }
   }
 
-  static async getAllRolesData(page, limit) {
+  static async getAllRolesData(page, limit, search) {
     try {
       const query = "SELECT COUNT(*) as total FROM role"; // Hitung total data
       const countResult = await new Promise((resolve, reject) => {

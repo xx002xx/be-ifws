@@ -17,10 +17,40 @@ class panitiaController {
       res.status(500).json({ error: "Internal Server Error" });
     }
   }
-
+  static async createPanitiaNarasumber(req, res) {
+    const { id_panitia, id_kegiatan } = req.body;
+    try {
+      const newPanitia = await PanitiaModel.createPanitiaNarasumber(
+        id_kegiatan,
+        id_panitia
+      );
+      res.json(newPanitia);
+    } catch (error) {
+      console.error("Error creating Panitia", error);
+      res.status(500).json({ error: "Internal Server Error" });
+    }
+  }
   static async getAllPanitias(req, res) {
     try {
       const allPanitias = await PanitiaModel.getAllPanitias();
+      res.json(allPanitias);
+    } catch (error) {
+      console.error("Error getting all Panitias", error);
+      res.status(500).json({ error: "Internal Server Error" });
+    }
+  }
+  static async getAllPanitiasNarasumber(req, res) {
+    try {
+      const allPanitias = await PanitiaModel.getAllPanitiasNarasumber();
+      res.json(allPanitias);
+    } catch (error) {
+      console.error("Error getting all Panitias", error);
+      res.status(500).json({ error: "Internal Server Error" });
+    }
+  }
+  static async getAllPanitiasNotNarasumber(req, res) {
+    try {
+      const allPanitias = await PanitiaModel.getAllPanitiasNotNarasumber();
       res.json(allPanitias);
     } catch (error) {
       console.error("Error getting all Panitias", error);
@@ -60,6 +90,24 @@ class panitiaController {
     }
   }
 
+  static async getAllPanitiasDataDetail(req, res) {
+    try {
+      const role = req.query.role;
+      const id = req.params.id;
+      const PanitiasData = await PanitiaModel.getAllPanitiasDataDetail(
+        id,
+        role
+      );
+
+      const items = PanitiasData.items;
+
+      res.status(200).json({ items });
+    } catch (error) {
+      console.error("Error getting all Panitias", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  }
+
   static async getPanitiaById(req, res) {
     const idPanitia = req.params.id;
     try {
@@ -92,6 +140,16 @@ class panitiaController {
     const idPanitia = req.params.id;
     try {
       const deletedPanitia = await PanitiaModel.deletePanitia(idPanitia);
+      res.json(deletedPanitia);
+    } catch (error) {
+      console.error("Error deleting Panitia", error);
+      res.status(500).json({ error: "Internal Server Error" });
+    }
+  }
+  static async deletePanitiadetail(req, res) {
+    const idPanitia = req.params.id;
+    try {
+      const deletedPanitia = await PanitiaModel.deletePanitiadetail(idPanitia);
       res.json(deletedPanitia);
     } catch (error) {
       console.error("Error deleting Panitia", error);

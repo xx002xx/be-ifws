@@ -39,10 +39,11 @@ class RoleController {
 
   static async getAllRolesData(req, res) {
     try {
-      const page = parseInt(req.query.page) || 1;
+      const page = parseInt(req.query.offset) || 1;
       const limit = parseInt(req.query.limit) || 5;
+      const search = req.query.search;
 
-      const rolesData = await RoleModel.getAllRolesData(page, limit);
+      const rolesData = await RoleModel.getAllRolesData(page, limit, search);
 
       const total = rolesData.total;
       const items = rolesData.items;
