@@ -33,6 +33,18 @@ class MenuController {
       this.handleError(res, error);
     }
   }
+  static async getMenuByidROle(req, res) {
+    const idMenu = req.params.id;
+    try {
+      const menu = await MenuModel.getMenuByidROle(idMenu);
+      if (!menu) {
+        return res.status(404).json({ error: "Menu not found" });
+      }
+      res.json(menu);
+    } catch (error) {
+      this.handleError(res, error);
+    }
+  }
 
   static async fetchAllMenusData(req, res) {
     const page = parseInt(req.query.offset) || 1;

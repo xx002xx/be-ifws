@@ -29,8 +29,13 @@ class KegiatanController {
     try {
       const page = parseInt(req.query.page) || 1;
       const limit = parseInt(req.query.limit) || 5;
+      const search = req.query.search || "";
 
-      const kegiatanData = await KegiatanModel.getAllKegiatanData(page, limit);
+      const kegiatanData = await KegiatanModel.getAllKegiatanData(
+        page,
+        limit,
+        search
+      );
 
       const { total, items } = kegiatanData;
 
@@ -51,6 +56,38 @@ class KegiatanController {
     } catch (error) {
       console.error("Error creating Kegiatan", error);
       res.status(500).json({ error: "Internal server error" });
+    }
+  }
+
+  static async createLaporan(req, res) {
+    try {
+      const laporanData = req.body;
+      const newLaporan = await KegiatanModel.createLaporan(laporanData);
+      res.status(201).json(newLaporan);
+    } catch (error) {
+      console.error("Error creating Laporan", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  }
+
+  static async generatePdf(req, res) {
+    const { id } = req.params;
+    const pdf = await KegiatanModel.generatePdf(id);
+    if (pdf) {
+      console.log(pdf); // Munculkan hasil pdf di console
+      res.json(pdf);
+    } else {
+      res.status(404).json({ error: "PDF not found" });
+    }
+  }
+
+  static async kirimEmailById(req, res) {
+    const { id } = req.params;
+    const email = await KegiatanModel.kirimEmailById(id);
+    if (email) {
+      res.json(email);
+    } else {
+      res.status(404).json({ error: "Email not found" });
     }
   }
 

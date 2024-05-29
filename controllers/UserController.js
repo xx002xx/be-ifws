@@ -28,8 +28,9 @@ class UserController {
     try {
       const page = parseInt(req.query.page) || 1;
       const limit = parseInt(req.query.limit) || 5;
+      const search = req.query.search || "";
 
-      const PanitiasData = await UserModel.getAllUserData(page, limit);
+      const PanitiasData = await UserModel.getAllUserData(page, limit, search);
 
       const total = PanitiasData.total;
       const items = PanitiasData.items;
@@ -113,6 +114,7 @@ class UserController {
           nama: user[0].nama,
           email: user[0].email_akun,
           id_role: user[0].id_role,
+          nm_role: user[0].nm_role,
         });
         console.log(userData); // Ini adalah objek data user
         // Lakukan operasi lain dengan data pengguna di sini

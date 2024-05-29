@@ -21,9 +21,12 @@ class UserModel {
     }
   }
 
-  static async getAllUserData(page, limit) {
+  static async getAllUserData(page, limit, search) {
     try {
-      const query = "SELECT COUNT(*) as total FROM akun"; // Hitung total data
+      let query = "SELECT COUNT(*) as total FROM akun"; // Hitung total data
+      if (search) {
+        query += ` WHERE username LIKE '%${search}%'`;
+      }
       const countResult = await new Promise((resolve, reject) => {
         pool.query(query, (error, results, fields) => {
           if (error) {
@@ -37,9 +40,13 @@ class UserModel {
       const total = countResult;
       const offset = (page - 1) * limit;
 
-      const queryData = `SELECT a.*, b.nm_role
+      let queryData = `SELECT a.*, b.nm_role
       FROM akun a
-      JOIN role b ON a.id_role = b.id_role LIMIT ${limit} OFFSET ${offset}`;
+      JOIN role b ON a.id_role = b.id_role`;
+      if (search) {
+        queryData += ` WHERE a.username LIKE '%${search}%'`;
+      }
+      queryData += ` LIMIT ${limit} OFFSET ${offset}`;
       const dataResult = await new Promise((resolve, reject) => {
         pool.query(queryData, (error, results, fields) => {
           if (error) {
@@ -81,7 +88,8 @@ class UserModel {
 
     try {
       // Query untuk mendapatkan informasi pengguna berdasarkan username dan password
-      const query = "SELECT * FROM akun WHERE username = ? AND password = ?";
+      const query =
+        "SELECT a.*, b.nm_role FROM akun a JOIN role b ON a.id_role = b.id_role WHERE a.username = ? AND a.password = ?";
       const result = await new Promise((resolve, reject) => {
         pool.query(
           query,
@@ -142,33 +150,37 @@ class UserModel {
 
   static async updateUser(username, userData) {
     try {
-      const client = await pool.connect();
-      const { nama, password, email, id_role, status } = userData;
+      const { nama, password, email, id_role } = userData;
       const hashedPassword = sha1(password).toString();
-      let query = "UPDATE tb_user SET";
+      let query = "UPDATE akun SET";
       const values = [];
+      let index = 1;
+
       if (nama) {
-        query += ` nama = $1,`;
+        query += ` nama = $${index++},`;
         values.push(nama);
       }
       if (email) {
-        query += ` email = $2,`;
+        query += ` email_akun = $${index++},`;
         values.push(email);
       }
       if (id_role) {
-        query += ` id_role = $3,`;
+        query += ` id_role = $${index++},`;
         values.push(id_role);
       }
-      if (status) {
-        query += ` status = $4,`;
-        values.push(status);
+
+      if (password) {
+        query += ` password = $${index++},`;
+        values.push(hashedPassword);
       }
+
       query = query.slice(0, -1); // Remove trailing comma
-      query += ` WHERE username = $${values.length + 1} RETURNING *`;
+      query += ` WHERE username = $${index} `;
       values.push(username);
 
-      const result = await client.query(query, values);
-      client.release();
+      const result = await pool.query(query, values);
+      console.log(result);
+      console.log(query);
 
       if (result.rowCount > 0) {
         return { success: true, message: "User updated successfully" };

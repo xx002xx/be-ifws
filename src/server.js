@@ -21,7 +21,9 @@ app.use((req, res, next) => {
 
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json());
+const path = require("path");
 
+app.use("/uploads", express.static(path.join(__dirname, "../uploads")));
 app.use(verifyToken);
 
 // Routes

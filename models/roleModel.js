@@ -36,7 +36,10 @@ class RoleModel {
 
   static async getAllRolesData(page, limit, search) {
     try {
-      const query = "SELECT COUNT(*) as total FROM role"; // Hitung total data
+      let query = "SELECT COUNT(*) as total FROM role"; // Hitung total data
+      if (search) {
+        query += ` WHERE nm_role LIKE '%${search}%'`;
+      }
       const countResult = await new Promise((resolve, reject) => {
         pool.query(query, (error, results, fields) => {
           if (error) {
@@ -50,7 +53,11 @@ class RoleModel {
       const total = countResult;
       const offset = (page - 1) * limit;
 
-      const queryData = `SELECT * FROM role LIMIT ${limit} OFFSET ${offset}`;
+      let queryData = `SELECT * FROM role`;
+      if (search) {
+        queryData += ` WHERE nm_role LIKE '%${search}%'`;
+      }
+      queryData += ` LIMIT ${limit} OFFSET ${offset}`;
       const dataResult = await new Promise((resolve, reject) => {
         pool.query(queryData, (error, results, fields) => {
           if (error) {

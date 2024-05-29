@@ -112,6 +112,26 @@ class MenuModel {
     }
   }
 
+  static async getMenuByidROle(idRole) {
+    try {
+      const query =
+        "SELECT hak_akses.*, menu.nm_menu, menu.url_menu FROM hak_akses JOIN menu ON hak_akses.id_menu = menu.id_menu WHERE hak_akses.id_role = ? order by menu.id_menu asc";
+      const result = await new Promise((resolve, reject) => {
+        pool.query(query, [idRole], (error, results, fields) => {
+          if (error) {
+            reject(error);
+          } else {
+            resolve(results);
+          }
+        });
+      });
+      return result;
+    } catch (error) {
+      console.error("Error getting menu by ID:", error);
+      throw new Error("Database error:", error.message);
+    }
+  }
+
   static async updateMenu(idMenu, nmMenu, urlMenu) {
     try {
       const query = "UPDATE menu SET nm_menu =?, url_menu =? WHERE id_menu =?";

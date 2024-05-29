@@ -6,7 +6,10 @@ const kegiatanController = require("../controllers/KegiatanController"); // Meng
 router.get("/", kegiatanController.getAllKegiatan); // Mengubah userController.getAllUsers menjadi kegiatanController.getAllKegiatan
 router.get("/data", kegiatanController.getAllKegiatanData);
 router.get("/data/:nama", kegiatanController.getKegiatanByUsername); // Mengubah userController.getUserByUsername menjadi kegiatanController.getKegiatanByUsername
-router.post("/", kegiatanController.createKegiatan); // Mengubah userController.createUser menjadi kegiatanController.createKegiatan
+router.post("/", kegiatanController.createKegiatan);
+router.post("/laporan", kegiatanController.createLaporan);
+router.get("/laporan/pdf/:id", kegiatanController.generatePdf);
+router.get("/kirimemail/:id", kegiatanController.kirimEmailById);
 router.put("/:id", kegiatanController.updateKegiatan); // Mengubah userController.updateUser menjadi kegiatanController.updateKegiatan
 router.get("/delete/:id", kegiatanController.deleteKegiatan); // Mengubah userController.deleteUser menjadi kegiatanController.deleteKegiatan
 

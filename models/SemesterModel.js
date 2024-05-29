@@ -45,9 +45,12 @@ class SemesterModel {
     }
   }
 
-  static async getAllSemestersData(page, limit) {
+  static async getAllSemestersData(page, limit, search) {
     try {
-      const query = "SELECT COUNT(*) as total FROM semester"; // Hitung total data
+      let query = "SELECT COUNT(*) as total FROM semester"; // Hitung total data
+      if (search) {
+        query += ` WHERE semester LIKE '%${search}%'`;
+      }
       const countResult = await new Promise((resolve, reject) => {
         pool.query(query, (error, results, fields) => {
           if (error) {
@@ -61,8 +64,12 @@ class SemesterModel {
       const total = countResult;
       const offset = (page - 1) * limit;
 
-      const queryData = `SELECT a.*
-      FROM semester a LIMIT ${limit} OFFSET ${offset}`;
+      let queryData = `SELECT a.*
+      FROM semester a`;
+      if (search) {
+        queryData += ` WHERE a.semester LIKE '%${search}%'`;
+      }
+      queryData += ` LIMIT ${limit} OFFSET ${offset}`;
       const dataResult = await new Promise((resolve, reject) => {
         pool.query(queryData, (error, results, fields) => {
           if (error) {

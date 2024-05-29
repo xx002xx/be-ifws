@@ -17,6 +17,98 @@ class panitiaController {
       res.status(500).json({ error: "Internal Server Error" });
     }
   }
+
+  static async createPesertaTugasAkhir(req, res) {
+    if (!req.file) {
+      return res.status(400).send({ message: "Tidak ada file yang diunggah." });
+    }
+    const fileexcel = req.file.filename;
+    const filePath = `/uploads/${fileexcel}`;
+    try {
+      const newPanitia = await PanitiaModel.createPesertaTugasAkhir(
+        req.body.id_kegiatan,
+        req.body.id_panitia,
+        filePath // Menggunakan filePath yang sudah dibentuk
+      );
+      if (!newPanitia) {
+        return res.status(404).json({ error: "Data panitia tidak ditemukan" });
+      }
+      res.json({
+        message: "File berhasil diunggah!",
+        filePath: filePath,
+      });
+    } catch (error) {
+      console.error("Error creating Panitia", error);
+      res.status(500).json({ error: error.message });
+    }
+  }
+
+  static async createRepository(req, res) {
+    if (!req.file) {
+      return res.status(400).send({ message: "Tidak ada file yang diunggah." });
+    }
+    const fileexcel = req.file.filename;
+    const filePath = `uploads/${fileexcel}`;
+    try {
+      const newPanitia = await PanitiaModel.createRepository(
+        req.body.id_kegiatan,
+        req.body.nama_file,
+        req.body.username,
+        filePath // Menggunakan filePath yang sudah dibentuk
+      );
+      if (!newPanitia) {
+        return res.status(404).json({ error: "Data panitia tidak ditemukan" });
+      }
+      res.json({
+        message: "File berhasil diunggah!",
+        filePath: filePath,
+      });
+    } catch (error) {
+      console.error("Error creating Panitia", error);
+      res.status(500).json({ error: error.message });
+    }
+  }
+
+  static async pesertatugasakhirzoom(req, res) {
+    if (!req.file) {
+      return res.status(400).send({ message: "Tidak ada file yang diunggah." });
+    }
+    const fileexcel = req.file.filename;
+    const filePath = `/uploads/${fileexcel}`;
+    try {
+      const newPanitia = await PanitiaModel.pesertatugasakhirzoom(
+        req.body.id_kegiatan,
+        req.body.id_panitia,
+        filePath // Menggunakan filePath yang sudah dibentuk
+      );
+      if (!newPanitia) {
+        return res.status(404).json({ error: "Data panitia tidak ditemukan" });
+      }
+      res.json({
+        message: "File berhasil diunggah!",
+        filePath: filePath,
+      });
+    } catch (error) {
+      console.error("Error creating Panitia", error);
+      res.status(500).json({ error: error.message });
+    }
+  }
+
+  static async updatePanitiaDetail(req, res) {
+    const idPanitia = req.params.id;
+    const { rate_panitia } = req.body;
+    try {
+      const updatedPanitia = await PanitiaModel.updatePanitiaDetail(
+        idPanitia,
+        rate_panitia
+      );
+      res.json(updatedPanitia);
+    } catch (error) {
+      console.error("Error updating Panitia", error);
+      res.status(500).json({ error: "Internal Server Error" });
+    }
+  }
+
   static async createPanitiaNarasumber(req, res) {
     const { id_panitia, id_kegiatan } = req.body;
     try {
@@ -75,8 +167,13 @@ class panitiaController {
     try {
       const page = parseInt(req.query.page) || 1;
       const limit = parseInt(req.query.limit) || 5;
+      const search = req.query.search || "";
 
-      const PanitiasData = await PanitiaModel.getAllPanitiasData(page, limit);
+      const PanitiasData = await PanitiaModel.getAllPanitiasData(
+        page,
+        limit,
+        search
+      );
 
       const total = PanitiasData.total;
       const items = PanitiasData.items;
@@ -84,6 +181,37 @@ class panitiaController {
       const totalPages = Math.ceil(total / limit); // Hitung total halaman
 
       res.status(200).json({ total, totalPages, items });
+    } catch (error) {
+      console.error("Error getting all Panitias", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  }
+
+  static async getAllPanitiasDataPeserta(req, res) {
+    try {
+      const PanitiasData = await PanitiaModel.getAllPanitiasDataPeserta();
+      res.json(PanitiasData);
+    } catch (error) {
+      console.error("Error getting all Panitias", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  }
+  static async getAllPanitiasDataPesertaById(req, res) {
+    try {
+      const id = req.params.id;
+      const PanitiasData = await PanitiaModel.getAllPanitiasDataPesertaById(id);
+      res.json(PanitiasData);
+    } catch (error) {
+      console.error("Error getting all Panitias", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  }
+
+  static async getAllPanitiasDataReposryById(req, res) {
+    try {
+      const id = req.params.id;
+      const PanitiasData = await PanitiaModel.getAllPanitiasDataReposryById(id);
+      res.json(PanitiasData);
     } catch (error) {
       console.error("Error getting all Panitias", error);
       res.status(500).json({ error: "Internal server error" });
@@ -119,6 +247,19 @@ class panitiaController {
     }
   }
 
+  static async getAllPanitiasDataKehadiranById(req, res) {
+    try {
+      const id = req.params.id;
+      const PanitiasData = await PanitiaModel.getAllPanitiasDataKehadiranById(
+        id
+      );
+      res.json(PanitiasData);
+    } catch (error) {
+      console.error("Error getting all Panitias", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  }
+
   static async updatePanitia(req, res) {
     const idPanitia = req.params.id;
     const { nama_panitia, rate_panitia, id_role } = req.body; // Menghapus status dari objek yang diterima dari permintaan
@@ -146,10 +287,34 @@ class panitiaController {
       res.status(500).json({ error: "Internal Server Error" });
     }
   }
+
+  static async deleteRepo(req, res) {
+    const idRepo = req.params.id;
+    try {
+      const deletedRepo = await PanitiaModel.deleteRepo(idRepo);
+      res.json(deletedRepo);
+    } catch (error) {
+      console.error("Error deleting Repo", error);
+      res.status(500).json({ error: "Internal Server Error" });
+    }
+  }
+
   static async deletePanitiadetail(req, res) {
     const idPanitia = req.params.id;
     try {
       const deletedPanitia = await PanitiaModel.deletePanitiadetail(idPanitia);
+      res.json(deletedPanitia);
+    } catch (error) {
+      console.error("Error deleting Panitia", error);
+      res.status(500).json({ error: "Internal Server Error" });
+    }
+  }
+  static async deletePanitiaDataPeserta(req, res) {
+    const idPanitia = req.params.id;
+    try {
+      const deletedPanitia = await PanitiaModel.deletePanitiaDataPeserta(
+        idPanitia
+      );
       res.json(deletedPanitia);
     } catch (error) {
       console.error("Error deleting Panitia", error);
