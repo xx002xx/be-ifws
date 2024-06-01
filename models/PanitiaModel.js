@@ -1,6 +1,6 @@
 // models/PanitiaModel.js
-
 const pool = require("../config/db");
+const sha1 = require("crypto-js/sha1");
 
 class PanitiaModel {
   static async createPanitia(nama_panitia, rate_panitia, id_role) {
@@ -136,6 +136,57 @@ class PanitiaModel {
                                 "Error executing detail insert query"
                               );
                             }
+                            if (NPM !== 0) {
+                              const checkAccountQuery =
+                                "SELECT COUNT(*) as count FROM akun WHERE username = ?";
+                              pool.query(
+                                checkAccountQuery,
+                                [NPM],
+                                (error, results) => {
+                                  if (error) {
+                                    console.error(
+                                      "Error executing account check query:",
+                                      error
+                                    );
+                                    throw new Error(
+                                      "Error executing account check query"
+                                    );
+                                  }
+                                  const count = results[0].count;
+                                  if (count === 0) {
+                                    console.log("NPM update" + NPM);
+                                    console.log(idpes);
+                                    const pass = NPM.toString();
+                                    const hashedPassword =
+                                      sha1(pass).toString();
+                                    console.log(hashedPassword);
+                                    const insertAccountQuery =
+                                      "INSERT INTO akun (username, password, nama, id_role, id_peserta) VALUES (?, ?, ?, ?, ?)";
+                                    pool.query(
+                                      insertAccountQuery,
+                                      [
+                                        NPM,
+                                        hashedPassword,
+                                        Nama,
+                                        31,
+                                        idPeserta,
+                                      ],
+                                      (error, results) => {
+                                        if (error) {
+                                          console.error(
+                                            "Error executing insert account query:",
+                                            error
+                                          );
+                                          throw new Error(
+                                            "Error executing insert account query"
+                                          );
+                                        }
+                                      }
+                                    );
+                                  }
+                                }
+                              );
+                            }
                           }
                         );
                       }
@@ -171,6 +222,51 @@ class PanitiaModel {
                       if (error) {
                         console.error("Error executing update query:", error);
                         throw new Error("Error executing update query");
+                      } else {
+                        if (NPM > 0) {
+                          const checkAccountQuery =
+                            "SELECT COUNT(*) as count FROM akun WHERE username = ?";
+                          pool.query(
+                            checkAccountQuery,
+                            [NPM],
+                            (error, results) => {
+                              if (error) {
+                                console.error(
+                                  "Error executing account check query:",
+                                  error
+                                );
+                                throw new Error(
+                                  "Error executing account check query"
+                                );
+                              }
+                              const count = results[0].count;
+                              if (count === 0) {
+                                console.log("NPM update" + NPM);
+                                console.log(idPeserta);
+                                const pass = NPM.toString();
+                                const hashedPassword = sha1(pass).toString();
+                                console.log(hashedPassword);
+                                const insertAccountQuery =
+                                  "INSERT INTO akun (username, password, nama, id_role, id_peserta) VALUES (?, ?, ?, ?, ?)";
+                                pool.query(
+                                  insertAccountQuery,
+                                  [NPM, hashedPassword, Nama, 31, idPeserta],
+                                  (error, results) => {
+                                    if (error) {
+                                      console.error(
+                                        "Error executing insert account query:",
+                                        error
+                                      );
+                                      throw new Error(
+                                        "Error executing insert account query"
+                                      );
+                                    }
+                                  }
+                                );
+                              }
+                            }
+                          );
+                        }
                       }
                     }
                   );
@@ -261,7 +357,7 @@ class PanitiaModel {
 
         // Check if NPM already exists
         const checkQuery =
-          "SELECT COUNT(*) as count FROM daftar_peserta WHERE npm = ?";
+          "SELECT COUNT(*) as count, id_peserta FROM daftar_peserta WHERE npm = ?";
         pool.query(checkQuery, [NPM], (error, results) => {
           if (error) {
             console.error("Error executing query:", error);
@@ -269,6 +365,7 @@ class PanitiaModel {
           }
 
           const count = results[0].count;
+          const idpes = results[0].id_peserta;
           console.log(count);
           if (count === 0) {
             // Insert new record if NPM does not exist
@@ -281,11 +378,31 @@ class PanitiaModel {
                 if (error) {
                   console.error("Error executing insert query:", error);
                   throw new Error("Error executing insert query");
+                } else {
+                  const id_peserta = results.insertId;
+                  const pass = NPM.toString();
+                  const hashedPassword = sha1(pass).toString();
+                  const insertAccountQuery =
+                    "INSERT INTO akun (username, password, nama, id_role, id_peserta) VALUES (?, ?, ?, ?, ?)";
+                  pool.query(
+                    insertAccountQuery,
+                    [NPM, hashedPassword, Nama, 31, id_peserta],
+                    (error, results) => {
+                      if (error) {
+                        console.error(
+                          "Error executing insert account query:",
+                          error
+                        );
+                        throw new Error("Error executing insert account query");
+                      }
+                    }
+                  );
                 }
               }
             );
           } else {
             // Update existing record if NPM exists
+
             const updateQuery =
               "UPDATE daftar_peserta SET nama = ?, no_semester = ?, status_peserta = ? WHERE npm = ?";
             pool.query(
@@ -295,6 +412,43 @@ class PanitiaModel {
                 if (error) {
                   console.error("Error executing update query:", error);
                   throw new Error("Error executing update query");
+                } else {
+                  const checkAccountQuery =
+                    "SELECT COUNT(*) as count FROM akun WHERE username = ?";
+                  pool.query(checkAccountQuery, [NPM], (error, results) => {
+                    if (error) {
+                      console.error(
+                        "Error executing account check query:",
+                        error
+                      );
+                      throw new Error("Error executing account check query");
+                    }
+                    const count = results[0].count;
+                    if (count === 0) {
+                      console.log("NPM update" + NPM);
+                      console.log(idpes);
+                      const pass = NPM.toString();
+                      const hashedPassword = sha1(pass).toString();
+                      console.log(hashedPassword);
+                      const insertAccountQuery =
+                        "INSERT INTO akun (username, password, nama, id_role, id_peserta) VALUES (?, ?, ?, ?, ?)";
+                      pool.query(
+                        insertAccountQuery,
+                        [NPM, hashedPassword, Nama, 31, idpes],
+                        (error, results) => {
+                          if (error) {
+                            console.error(
+                              "Error executing insert account query:",
+                              error
+                            );
+                            throw new Error(
+                              "Error executing insert account query"
+                            );
+                          }
+                        }
+                      );
+                    }
+                  });
                 }
               }
             );
@@ -420,6 +574,8 @@ WHERE b.nm_role NOT LIKE '%Narasumber%'`;
       if (search) {
         query += ` WHERE nama_panitia LIKE '%${search}%'`;
       }
+
+      query += ` ORDER BY id_panitia DESC`;
       const countResult = await new Promise((resolve, reject) => {
         pool.query(query, (error, results, fields) => {
           if (error) {
@@ -439,6 +595,8 @@ WHERE b.nm_role NOT LIKE '%Narasumber%'`;
       if (search) {
         queryData += ` WHERE a.nama_panitia LIKE '%${search}%'`;
       }
+
+      queryData += ` ORDER BY id_panitia DESC`;
       queryData += ` LIMIT ${limit} OFFSET ${offset}`;
       const dataResult = await new Promise((resolve, reject) => {
         pool.query(queryData, (error, results, fields) => {

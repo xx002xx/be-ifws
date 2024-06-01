@@ -17,7 +17,7 @@ class RoleModel {
 
   static async getAllRoles() {
     try {
-      const query = "SELECT * FROM role";
+      const query = "SELECT * FROM role order by id_role";
       const result = await new Promise((resolve, reject) => {
         pool.query(query, (error, results, fields) => {
           if (error) {
@@ -40,6 +40,8 @@ class RoleModel {
       if (search) {
         query += ` WHERE nm_role LIKE '%${search}%'`;
       }
+
+      query += ` ORDER BY id_role DESC`;
       const countResult = await new Promise((resolve, reject) => {
         pool.query(query, (error, results, fields) => {
           if (error) {
@@ -57,6 +59,8 @@ class RoleModel {
       if (search) {
         queryData += ` WHERE nm_role LIKE '%${search}%'`;
       }
+
+      queryData += ` ORDER BY id_role DESC`;
       queryData += ` LIMIT ${limit} OFFSET ${offset}`;
       const dataResult = await new Promise((resolve, reject) => {
         pool.query(queryData, (error, results, fields) => {

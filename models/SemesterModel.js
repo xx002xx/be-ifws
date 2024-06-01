@@ -51,6 +51,8 @@ class SemesterModel {
       if (search) {
         query += ` WHERE semester LIKE '%${search}%'`;
       }
+
+      query += ` ORDER BY id_semester DESC`;
       const countResult = await new Promise((resolve, reject) => {
         pool.query(query, (error, results, fields) => {
           if (error) {
@@ -69,6 +71,8 @@ class SemesterModel {
       if (search) {
         queryData += ` WHERE a.semester LIKE '%${search}%'`;
       }
+
+      queryData += ` ORDER BY a.id_semester DESC`;
       queryData += ` LIMIT ${limit} OFFSET ${offset}`;
       const dataResult = await new Promise((resolve, reject) => {
         pool.query(queryData, (error, results, fields) => {

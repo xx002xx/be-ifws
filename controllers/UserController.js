@@ -115,6 +115,8 @@ class UserController {
           email: user[0].email_akun,
           id_role: user[0].id_role,
           nm_role: user[0].nm_role,
+          id_panitia: user[0].id_panitia,
+          id_peserta: user[0].id_peserta,
         });
         console.log(userData); // Ini adalah objek data user
         // Lakukan operasi lain dengan data pengguna di sini

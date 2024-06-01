@@ -112,29 +112,46 @@ class UserModel {
 
   static async createUser(userData) {
     try {
-      const { username, password, nama, email_akun, last_login, id_role } =
-        userData;
+      const {
+        username,
+        password,
+        nama,
+        email_akun,
+        last_login,
+        id_role,
+        id_panitia,
+        id_peserta,
+      } = userData;
       const hashedPassword = sha1(password).toString(); // Hash password menggunakan SHA1
-
+      console.log(userData);
       // Periksa apakah username sudah ada
       const insertQuery =
-        "INSERT INTO akun (username, password, nama, email_akun, last_login, id_role) VALUES (?, ?, ?, ?, ?, ?)";
+        "INSERT INTO akun (username, password, nama, email_akun, last_login, id_role, id_panitia, id_peserta) VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
       const result = await pool.query(insertQuery, [
+        username || null,
+        hashedPassword || null,
+        nama || null,
+        email_akun || null,
+        last_login || null,
+        id_role || null,
+        id_panitia || null,
+        id_peserta || null,
+      ]);
+      console.log(result);
+      console.log("Last executed query:", insertQuery);
+      console.log("Values to be inserted:", {
         username,
         hashedPassword,
         nama,
         email_akun,
         last_login,
         id_role,
-      ]);
+        id_panitia,
+        id_peserta,
+      });
 
-      // Jika eksekusi kueri berhasil tanpa ada kesalahan, kembalikan objek sukses
-      if (result) {
-        return { success: true, message: "Data berhasil ditambahkan" };
-      } else {
-        // Jika rowCount 0, ini menunjukkan bahwa tidak ada baris yang berhasil dimasukkan
-        return { success: false, message: "Gagal menambahkan data" };
-      }
+      // Jika eksekusi kueri berhasil tanpa ada kesalahan, kembalikan objek gagal
+      return { success: true, message: "Role created successfully" };
     } catch (error) {
       if (error.code === "ER_DUP_ENTRY") {
         // Handle kesalahan duplikat di sini

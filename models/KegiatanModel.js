@@ -1,5 +1,5 @@
 const pool = require("../config/db");
-
+const moment = require("moment-timezone");
 class KegiatanModel {
   static async getAllKegiatan() {
     try {
@@ -7,6 +7,7 @@ class KegiatanModel {
       SELECT k.*, s.semester, s.tahun_awal, s.tahun_akhir
       FROM kegiatan k
       JOIN semester s ON k.id_semester = s.id_semester
+      ORDER BY k.id_kegiatan DESC
     `;
       const result = await new Promise((resolve, reject) => {
         pool.query(query, (error, results, fields) => {
@@ -30,6 +31,7 @@ class KegiatanModel {
       if (search) {
         query += ` WHERE judul_topik LIKE '%${search}%'`;
       }
+      query += ` ORDER BY id_kegiatan DESC`;
       const countResult = await new Promise((resolve, reject) => {
         pool.query(query, (error, results, fields) => {
           if (error) {
@@ -50,6 +52,97 @@ class KegiatanModel {
       `;
       if (search) {
         queryData += ` WHERE k.judul_topik LIKE '%${search}%'`;
+      }
+      queryData += ` ORDER BY id_kegiatan DESC`;
+      queryData += ` LIMIT ${limit} OFFSET ${offset}`;
+
+      const dataResult = await new Promise((resolve, reject) => {
+        pool.query(queryData, (error, results, fields) => {
+          if (error) {
+            reject(error);
+          } else {
+            resolve(results);
+          }
+        });
+      });
+
+      return { total, items: dataResult };
+    } catch (error) {
+      console.error("Error getting all Kegiatan", error);
+      throw new Error("Database error");
+    }
+  }
+
+  static async getKegiatanNarsumData(page, limit, search, id_panitia) {
+    try {
+      let query = `SELECT COUNT(*) as total FROM view_daftar_kehadiran where id_panitia = '${id_panitia}' or id_panitia is null`; // Hitung total data
+      if (search) {
+        query += ` and judul_topik LIKE '%${search}%'`;
+      }
+      const countResult = await new Promise((resolve, reject) => {
+        pool.query(query, (error, results, fields) => {
+          if (error) {
+            reject(error);
+          } else {
+            resolve(results[0].total);
+          }
+        });
+      });
+
+      const total = countResult;
+      const offset = (page - 1) * limit;
+
+      let queryData = `
+        SELECT *
+        FROM view_daftar_kehadiran where id_panitia = '${id_panitia}' or id_panitia is null
+      `;
+      if (search) {
+        queryData += ` and judul_topik LIKE '%${search}%'`;
+      }
+      queryData += ` LIMIT ${limit} OFFSET ${offset}`;
+
+      const dataResult = await new Promise((resolve, reject) => {
+        pool.query(queryData, (error, results, fields) => {
+          if (error) {
+            reject(error);
+          } else {
+            resolve(results);
+          }
+        });
+      });
+
+      return { total, items: dataResult };
+    } catch (error) {
+      console.error("Error getting all Kegiatan", error);
+      throw new Error("Database error");
+    }
+  }
+
+  static async getKegiatanPeserta(page, limit, search, id_peserta) {
+    try {
+      let query = `SELECT COUNT(*) as total FROM view_kehadiran_peserta where id_peserta = '${id_peserta}' or id_peserta is null`; // Hitung total data
+      if (search) {
+        query += ` and judul_topik LIKE '%${search}%'`;
+      }
+      const countResult = await new Promise((resolve, reject) => {
+        pool.query(query, (error, results, fields) => {
+          if (error) {
+            reject(error);
+          } else {
+            resolve(results[0].total);
+          }
+        });
+      });
+
+      const total = countResult;
+      const offset = (page - 1) * limit;
+
+      let queryData = `
+        SELECT *
+        FROM view_kehadiran_peserta where id_peserta = '${id_peserta}' or id_peserta is null
+      `;
+      if (search) {
+        queryData += ` and judul_topik LIKE '%${search}%'`;
       }
       queryData += ` LIMIT ${limit} OFFSET ${offset}`;
 
@@ -100,26 +193,77 @@ class KegiatanModel {
         waktu_selesai,
       } = kegiatanData;
 
-      const query = `
-      INSERT INTO kegiatan (id_semester, judul_topik, link_webinar, tanggal_kegiatan, waktu_mulai, waktu_selesai)
-      VALUES (?, ?, ?, ?, ?, ?)
+      const semesterQuery = `
+      SELECT tanggal_awal, tanggal_akhir FROM semester WHERE id_semester = ?
     `;
+      const semesterResult = await new Promise((resolve, reject) => {
+        pool.query(
+          semesterQuery,
+          [id_semester],
+          (searchError, searchResults) => {
+            if (searchError) {
+              reject(searchError);
+            } else {
+              resolve(searchResults);
+            }
+          }
+        );
+      });
 
-      const result = await pool.query(query, [
-        id_semester,
-        judul_topik,
-        link_webinar,
-        tanggal_kegiatan,
-        waktu_mulai,
-        waktu_selesai,
-      ]);
+      const tanggalAwal = moment
+        .utc(semesterResult[0].tanggal_awal)
+        .tz("Asia/Jakarta")
+        .toDate();
+      const tanggalAkhir = moment
+        .utc(semesterResult[0].tanggal_akhir)
+        .tz("Asia/Jakarta")
+        .toDate();
 
-      // Jika eksekusi kueri berhasil tanpa ada kesalahan, kembalikan objek sukses
-      if (result) {
-        return { success: true, message: "Data kegiatan berhasil ditambahkan" };
+      const tanggalKegiatan = moment
+        .utc(tanggal_kegiatan)
+        .tz("Asia/Jakarta")
+        .toDate();
+      if (tanggalKegiatan >= tanggalAwal && tanggalKegiatan <= tanggalAkhir) {
+        const query = `
+        INSERT INTO kegiatan (id_semester, judul_topik, link_webinar, tanggal_kegiatan, waktu_mulai, waktu_selesai)
+        VALUES (?, ?, ?, ?, ?, ?)
+      `;
+
+        const result = await new Promise((resolve, reject) => {
+          pool.query(
+            query,
+            [
+              id_semester,
+              judul_topik,
+              link_webinar,
+              tanggal_kegiatan,
+              waktu_mulai,
+              waktu_selesai,
+            ],
+            (searchError, searchResults) => {
+              if (searchError) {
+                reject(searchError);
+              } else {
+                resolve(searchResults);
+              }
+            }
+          );
+        });
+
+        if (result.affectedRows > 0) {
+          return {
+            success: true,
+            message: "Data kegiatan berhasil ditambahkan",
+          };
+        } else {
+          return { success: false, message: "Gagal menambahkan data kegiatan" };
+        }
       } else {
-        // Jika affectedRows 0, ini menunjukkan bahwa tidak ada baris yang berhasil dimasukkan
-        return { success: false, message: "Gagal menambahkan data kegiatan" };
+        return {
+          success: false,
+          message:
+            "Tanggal kegiatan tidak memenuhi kriteria tanggal di semester",
+        };
       }
     } catch (error) {
       if (error.code === "ER_DUP_ENTRY") {
@@ -176,6 +320,137 @@ class KegiatanModel {
       } else {
         throw new Error(error.message);
       }
+    }
+  }
+
+  static async downloadKegiatan(id_kegiatan, id_panitia) {
+    // Logika untuk download kegiatan
+    try {
+      const query = `
+        SELECT judul_topik, tanggal_kegiatan, waktu_mulai, waktu_selesai 
+        FROM kegiatan 
+        WHERE id_kegiatan = ?
+      `;
+      const result = await new Promise((resolve, reject) => {
+        pool.query(query, [id_kegiatan], async (error, resultske, fields) => {
+          if (error) {
+            reject(error);
+          } else {
+            const querySiswa = `
+            select * from
+              view_pdf_panitia 
+              WHERE id_panitia = ?
+            `;
+            const siswaResults = await new Promise((resolve, reject) => {
+              pool.query(querySiswa, [id_panitia], (error, results, fields) => {
+                if (error) {
+                  reject(error);
+                } else {
+                  const promises = results.map((siswaResult, index) => {
+                    return new Promise((resolve, reject) => {
+                      const PDFDocument = require("pdfkit");
+                      const fs = require("fs");
+                      const doc = new PDFDocument({
+                        margin: 50,
+                        size: "A4",
+                        layout: "landscape",
+                      });
+
+                      const filePath = `uploads/sertifikat/${resultske[0].judul_topik.replace(
+                        / /g,
+                        "_"
+                      )}-${siswaResult.nama_panitia
+                        .replace(/ /g, "_")
+                        .replace(/\./g, "_")}.pdf`;
+                      console.log(filePath);
+                      console.log(
+                        `Generate ke-${index + 1} untuk ${
+                          siswaResult.nama_panitia
+                        }`
+                      );
+                      if (fs.existsSync(filePath)) {
+                        fs.unlinkSync(filePath);
+                      }
+                      doc.pipe(fs.createWriteStream(filePath));
+
+                      // Menambahkan border double dan header
+                      doc.rect(50, 50, 692, 500).lineWidth(1).stroke();
+                      doc.rect(55, 55, 682, 490).lineWidth(1).stroke(); // Border dalam untuk efek double
+                      doc.image("assets/logo.png", 356, 60, { width: 130 }); // Logo di tengah
+                      doc.moveDown(8); // Menyesuaikan posisi turun lebih banyak
+                      doc
+                        .fontSize(25)
+                        .text("Sertifikat Partisipasi", { align: "center" });
+                      doc.moveDown(0.5);
+                      doc
+                        .fontSize(20)
+                        .text(
+                          `Telah Menjadi Narasumber webinar dengan topik:`,
+                          {
+                            align: "center",
+                          }
+                        );
+                      doc
+                        .fontSize(25)
+                        .text(resultske[0].judul_topik, { align: "center" });
+                      doc.moveDown(0.5);
+
+                      // Menambahkan detail kegiatan
+                      doc
+                        .fontSize(15)
+                        .text(
+                          `Tanggal Kegiatan: ${resultske[0].tanggal_kegiatan}`,
+                          { align: "center" }
+                        );
+                      doc
+                        .fontSize(15)
+                        .text(`Waktu Mulai: ${resultske[0].waktu_mulai}`, {
+                          align: "center",
+                        });
+                      doc
+                        .fontSize(15)
+                        .text(`Waktu Selesai: ${resultske[0].waktu_selesai}`, {
+                          align: "center",
+                        });
+                      doc.moveDown(1);
+
+                      // Menambahkan informasi peserta
+                      doc
+                        .fontSize(15)
+                        .text(`Nama: ${siswaResult.nama_panitia}`, {
+                          align: "center",
+                        });
+
+                      doc.end();
+                      console.log(
+                        `Generate stop ke-${index + 1} untuk ${
+                          siswaResult.nama_panitia
+                        }`
+                      );
+                      resolve({
+                        success: true,
+                        message: "PDF berhasil dihasilkan",
+                      });
+                    });
+                  });
+                  Promise.all(promises).then(() => {
+                    resolve({
+                      success: true,
+                      message: "PDF berhasil dihasilkan",
+                    });
+                  });
+                }
+              });
+            });
+            resolve({ success: true, message: "PDF berhasil dihasilkan" });
+            // Tambahkan resolve di sini
+          }
+        });
+      });
+      return result;
+    } catch (error) {
+      console.error("Error generating PDF:", error);
+      throw new Error("Database error: " + error.message);
     }
   }
 
@@ -293,7 +568,8 @@ class KegiatanModel {
                 }
               });
             });
-            resolve({ success: true, message: "PDF berhasil dihasilkan" }); // Tambahkan resolve di sini
+            resolve({ success: true, message: "PDF berhasil dihasilkan" });
+            // Tambahkan resolve di sini
           }
         });
       });
@@ -444,18 +720,55 @@ class KegiatanModel {
     id_semester
   ) {
     try {
-      const query =
-        "UPDATE kegiatan SET judul_topik = ?, link_webinar = ?, tanggal_kegiatan = ?, waktu_mulai = ?, waktu_selesai = ?, id_semester = ? WHERE id_kegiatan = ?";
-      const result = await pool.query(query, [
-        judul_topik,
-        link_webinar,
-        tanggal_kegiatan,
-        waktu_mulai,
-        waktu_selesai,
-        id_semester,
-        id_kegiatan,
-      ]);
-      return { success: true, message: "Semester updated successfully" };
+      const semesterQuery = `
+        SELECT tanggal_awal, tanggal_akhir FROM semester WHERE id_semester = ?
+      `;
+      const semesterResult = await new Promise((resolve, reject) => {
+        pool.query(
+          semesterQuery,
+          [id_semester],
+          (searchError, searchResults) => {
+            if (searchError) {
+              reject(searchError);
+            } else {
+              resolve(searchResults);
+            }
+          }
+        );
+      });
+
+      const tanggalAwal = moment
+        .utc(semesterResult[0].tanggal_awal)
+        .tz("Asia/Jakarta")
+        .toDate();
+      const tanggalAkhir = moment
+        .utc(semesterResult[0].tanggal_akhir)
+        .tz("Asia/Jakarta")
+        .toDate();
+
+      const tanggalKegiatan = moment
+        .utc(tanggal_kegiatan)
+        .tz("Asia/Jakarta")
+        .toDate();
+      if (tanggalKegiatan >= tanggalAwal && tanggalKegiatan <= tanggalAkhir) {
+        const query =
+          "UPDATE kegiatan SET judul_topik = ?, link_webinar = ?, tanggal_kegiatan = ?, waktu_mulai = ?, waktu_selesai = ?, id_semester = ? WHERE id_kegiatan = ?";
+        const result = await pool.query(query, [
+          judul_topik,
+          link_webinar,
+          tanggal_kegiatan,
+          waktu_mulai,
+          waktu_selesai,
+          id_semester,
+          id_kegiatan,
+        ]);
+        return { success: true, message: "Semester updated successfully" };
+      } else {
+        return {
+          success: false,
+          message: "Tanggal kegiatan tidak berada dalam rentang semester",
+        };
+      }
     } catch (error) {
       console.error("Error updating Kegiatan:", error);
       throw new Error("Database error: " + error.message);
