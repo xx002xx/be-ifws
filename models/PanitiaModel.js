@@ -303,8 +303,22 @@ class PanitiaModel {
                           }
                         );
                       } else {
-                        console.log(
-                          "Detail already exists, not inserting duplicate."
+                        const updateDetailQuery =
+                          "UPDATE detail_peserta SET duration = duration + ? WHERE id_peserta = ? AND id_kegiatan = ?";
+                        pool.query(
+                          updateDetailQuery,
+                          [Durasi, idPeserta, id_kegiatan],
+                          (updateError, updateResults) => {
+                            if (updateError) {
+                              console.error(
+                                "Error executing detail update query:",
+                                updateError
+                              );
+                              throw new Error(
+                                "Error executing detail update query"
+                              );
+                            }
+                          }
                         );
                       }
                     }
@@ -326,9 +340,16 @@ class PanitiaModel {
     }
   }
 
-  static async createPesertaTugasAkhir(id_kegiatan, id_panitia, filePath) {
+  static async createPesertaTugasAkhir(
+    id_kegiatan,
+    id_panitia,
+    id_Semester,
+    filePath
+  ) {
     const xlsx = require("xlsx");
     let workbook;
+    const idSemester = id_Semester[0];
+    console.log("idSemester:");
     const path = require("path");
     const fileLocation = path.join(
       __dirname,
@@ -373,7 +394,7 @@ class PanitiaModel {
               "INSERT INTO daftar_peserta (npm, nama, no_semester, status_peserta) VALUES (?, ?, ?, ?)";
             pool.query(
               insertQuery,
-              [NPM, Nama, Semester, Status],
+              [NPM, Nama, idSemester, Status],
               (error, results) => {
                 if (error) {
                   console.error("Error executing insert query:", error);
@@ -402,12 +423,14 @@ class PanitiaModel {
             );
           } else {
             // Update existing record if NPM exists
-
+            console.log("Nama:", Nama);
+            console.log("Status:", Status);
+            console.log("NPM:", NPM);
             const updateQuery =
               "UPDATE daftar_peserta SET nama = ?, no_semester = ?, status_peserta = ? WHERE npm = ?";
             pool.query(
               updateQuery,
-              [Nama, Semester, Status, NPM],
+              [Nama, idSemester, Status, NPM],
               (error, results) => {
                 if (error) {
                   console.error("Error executing update query:", error);
@@ -630,7 +653,7 @@ WHERE b.nm_role NOT LIKE '%Narasumber%'`;
 
       const total = countResult;
       const queryData =
-        "SELECT * FROM daftar_peserta WHERE status_peserta <> 'Peserta'";
+        "SELECT * FROM daftar_peserta_ta_semester WHERE status_peserta <> 'Peserta'";
       const dataResult = await new Promise((resolve, reject) => {
         pool.query(queryData, (error, results) => {
           if (error) {
@@ -664,7 +687,7 @@ WHERE b.nm_role NOT LIKE '%Narasumber%'`;
 
       const total = countResult;
       const queryData =
-        "SELECT dp.*, dtp.duration, dtp.id_detail_peserta,dtp.id_kegiatan FROM detail_peserta dtp JOIN daftar_peserta dp ON dtp.id_peserta = dp.id_peserta WHERE dtp.id_kegiatan = ?";
+        "SELECT dp.*, dtp.duration, dtp.id_detail_peserta,dtp.id_kegiatan FROM detail_peserta dtp JOIN daftar_peserta_ta_semester dp ON dtp.id_peserta = dp.id_peserta WHERE dtp.id_kegiatan = ?";
       const dataResult = await new Promise((resolve, reject) => {
         pool.query(queryData, [id], (error, results) => {
           if (error) {

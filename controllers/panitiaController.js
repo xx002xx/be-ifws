@@ -28,6 +28,7 @@ class panitiaController {
       const newPanitia = await PanitiaModel.createPesertaTugasAkhir(
         req.body.id_kegiatan,
         req.body.id_panitia,
+        req.body.id_semester,
         filePath // Menggunakan filePath yang sudah dibentuk
       );
       if (!newPanitia) {

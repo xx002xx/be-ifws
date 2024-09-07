@@ -79,12 +79,14 @@ class KegiatanController {
       const limit = parseInt(req.query.limit) || 5;
       const search = req.query.search || "";
       const id_peserta = req.query.id_peserta;
+      const id_semester = req.query.id_semester || "";
 
       const kegiatanData = await KegiatanModel.getKegiatanPeserta(
         page,
         limit,
         search,
-        id_peserta
+        id_peserta,
+        id_semester
       );
 
       const { total, items } = kegiatanData;
@@ -160,6 +162,7 @@ class KegiatanController {
       waktu_mulai,
       waktu_selesai,
       id_semester,
+      tingkat,
     } = req.body;
     try {
       const updatedKegiatan = await KegiatanModel.updateKegiatan(
@@ -169,7 +172,8 @@ class KegiatanController {
         tanggal_kegiatan,
         waktu_mulai,
         waktu_selesai,
-        id_semester
+        id_semester,
+        tingkat
       );
       res.json(updatedKegiatan);
     } catch (error) {

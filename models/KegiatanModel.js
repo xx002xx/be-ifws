@@ -118,7 +118,13 @@ class KegiatanModel {
     }
   }
 
-  static async getKegiatanPeserta(page, limit, search, id_peserta) {
+  static async getKegiatanPeserta(
+    page,
+    limit,
+    search,
+    id_peserta,
+    id_semester
+  ) {
     try {
       let query = `SELECT COUNT(*) as total FROM view_kehadiran_peserta where id_peserta = '${id_peserta}' or id_peserta is null`; // Hitung total data
       if (search) {
@@ -139,12 +145,18 @@ class KegiatanModel {
 
       let queryData = `
         SELECT *
-        FROM view_kehadiran_peserta where id_peserta = '${id_peserta}' or id_peserta is null
+        FROM view_kehadiran_peserta where id_peserta = '${id_peserta}' 
       `;
       if (search) {
-        queryData += ` and judul_topik LIKE '%${search}%'`;
+        queryData += ` and judul_topik LIKE '${search}%'`;
       }
+      if (id_semester) {
+        queryData += ` and id_semester = '${id_semester}'`;
+      }
+      queryData += `or id_peserta is null`;
       queryData += ` LIMIT ${limit} OFFSET ${offset}`;
+
+      console.log("Query:", queryData);
 
       const dataResult = await new Promise((resolve, reject) => {
         pool.query(queryData, (error, results, fields) => {
@@ -191,6 +203,7 @@ class KegiatanModel {
         tanggal_kegiatan,
         waktu_mulai,
         waktu_selesai,
+        tingkat,
       } = kegiatanData;
 
       const semesterQuery = `
@@ -225,8 +238,8 @@ class KegiatanModel {
         .toDate();
       if (tanggalKegiatan >= tanggalAwal && tanggalKegiatan <= tanggalAkhir) {
         const query = `
-        INSERT INTO kegiatan (id_semester, judul_topik, link_webinar, tanggal_kegiatan, waktu_mulai, waktu_selesai)
-        VALUES (?, ?, ?, ?, ?, ?)
+        INSERT INTO kegiatan (id_semester, judul_topik, tingkat,link_webinar, tanggal_kegiatan, waktu_mulai, waktu_selesai)
+        VALUES (?, ?, ?, ?, ?, ?,?)
       `;
 
         const result = await new Promise((resolve, reject) => {
@@ -235,6 +248,7 @@ class KegiatanModel {
             [
               id_semester,
               judul_topik,
+              tingkat,
               link_webinar,
               tanggal_kegiatan,
               waktu_mulai,
@@ -327,7 +341,7 @@ class KegiatanModel {
     // Logika untuk download kegiatan
     try {
       const query = `
-        SELECT judul_topik, tanggal_kegiatan, waktu_mulai, waktu_selesai 
+        SELECT judul_topik, tanggal_kegiatan, waktu_mulai, waktu_selesai, tingkat 
         FROM kegiatan 
         WHERE id_kegiatan = ?
       `;
@@ -371,55 +385,67 @@ class KegiatanModel {
                       if (fs.existsSync(filePath)) {
                         fs.unlinkSync(filePath);
                       }
+
                       doc.pipe(fs.createWriteStream(filePath));
 
-                      // Menambahkan border double dan header
-                      doc.rect(50, 50, 692, 500).lineWidth(1).stroke();
-                      doc.rect(55, 55, 682, 490).lineWidth(1).stroke(); // Border dalam untuk efek double
-                      doc.image("assets/logo.png", 356, 60, { width: 130 }); // Logo di tengah
-                      doc.moveDown(8); // Menyesuaikan posisi turun lebih banyak
+                      // Adding the background image
+                      doc.image("assets/sertifikat.jpg", 0, 0, {
+                        width: doc.page.width,
+                        height: doc.page.height,
+                      });
+                      doc.moveDown(8);
                       doc
-                        .fontSize(25)
-                        .text("Sertifikat Partisipasi", { align: "center" });
-                      doc.moveDown(0.5);
+                        .fontSize(18)
+                        .font("Helvetica-Bold")
+                        .text(`${siswaResult.nama_panitia}`, {
+                          align: "center",
+                          valign: "middle",
+                          lineGap: 60,
+                        });
+
                       doc
                         .fontSize(20)
+                        .font("Helvetica-Bold")
+                        .text(`Narasumber`, {
+                          align: "center",
+                          valign: "middle",
+                          lineGap: 10,
+                        });
+
+                      doc
+                        .fontSize(16)
+                        .font("Helvetica-Bold")
                         .text(
-                          `Telah Menjadi Narasumber webinar dengan topik:`,
+                          `Pada Webinar Series tingkat ${resultske[0].tingkat}`,
                           {
                             align: "center",
+                            valign: "middle",
+                            lineGap: 10,
                           }
                         );
-                      doc
-                        .fontSize(25)
-                        .text(resultske[0].judul_topik, { align: "center" });
-                      doc.moveDown(0.5);
 
-                      // Menambahkan detail kegiatan
                       doc
                         .fontSize(15)
+                        .font("Helvetica-Bold")
+                        .text(`${resultske[0].judul_topik}`, {
+                          align: "center",
+                          valign: "middle",
+                          lineGap: 10,
+                        });
+                      doc.moveDown(6);
+                      doc
+                        .fontSize(18)
+                        .font("Helvetica-Bold")
                         .text(
-                          `Tanggal Kegiatan: ${resultske[0].tanggal_kegiatan}`,
-                          { align: "center" }
+                          `${formatTanggalIndonesia(
+                            resultske[0].tanggal_kegiatan
+                          )}`,
+                          {
+                            align: "center",
+                            valign: "middle",
+                            lineGap: 30,
+                          }
                         );
-                      doc
-                        .fontSize(15)
-                        .text(`Waktu Mulai: ${resultske[0].waktu_mulai}`, {
-                          align: "center",
-                        });
-                      doc
-                        .fontSize(15)
-                        .text(`Waktu Selesai: ${resultske[0].waktu_selesai}`, {
-                          align: "center",
-                        });
-                      doc.moveDown(1);
-
-                      // Menambahkan informasi peserta
-                      doc
-                        .fontSize(15)
-                        .text(`Nama: ${siswaResult.nama_panitia}`, {
-                          align: "center",
-                        });
 
                       doc.end();
                       console.log(
@@ -452,27 +478,50 @@ class KegiatanModel {
       console.error("Error generating PDF:", error);
       throw new Error("Database error: " + error.message);
     }
+    function formatTanggalIndonesia(tanggal) {
+      const bulanIndonesia = [
+        "Januari",
+        "Februari",
+        "Maret",
+        "April",
+        "Mei",
+        "Juni",
+        "Juli",
+        "Agustus",
+        "September",
+        "Oktober",
+        "November",
+        "Desember",
+      ];
+
+      const date = new Date(tanggal);
+      const hari = date.getDate();
+      const bulan = bulanIndonesia[date.getMonth()];
+      const tahun = date.getFullYear();
+
+      return `${hari} ${bulan} ${tahun}`;
+    }
   }
 
   static async generatePdf(id) {
     try {
       const query = `
-        SELECT judul_topik, tanggal_kegiatan, waktu_mulai, waktu_selesai 
-        FROM kegiatan 
-        WHERE id_kegiatan = ?
-      `;
+            SELECT judul_topik, tanggal_kegiatan, waktu_mulai, waktu_selesai, tingkat 
+            FROM kegiatan 
+            WHERE id_kegiatan = ?
+        `;
       const result = await new Promise((resolve, reject) => {
         pool.query(query, [id], async (error, resultske, fields) => {
           if (error) {
             reject(error);
           } else {
             const querySiswa = `
-              SELECT dp.*, dtp.duration, dtp.id_detail_peserta, dtp.id_kegiatan 
-              FROM detail_peserta dtp 
-              JOIN daftar_peserta dp 
-              ON dtp.id_peserta = dp.id_peserta 
-              WHERE dtp.id_kegiatan = ?
-            `;
+                        SELECT dp.*, dtp.duration, dtp.id_detail_peserta, dtp.id_kegiatan 
+                        FROM detail_peserta dtp 
+                        JOIN daftar_peserta dp 
+                        ON dtp.id_peserta = dp.id_peserta 
+                        WHERE dtp.id_kegiatan = ?
+                    `;
             const siswaResults = await new Promise((resolve, reject) => {
               pool.query(querySiswa, [id], (error, results, fields) => {
                 if (error) {
@@ -501,51 +550,61 @@ class KegiatanModel {
                       }
                       doc.pipe(fs.createWriteStream(filePath));
 
-                      // Menambahkan border double dan header
-                      doc.rect(50, 50, 692, 500).lineWidth(1).stroke();
-                      doc.rect(55, 55, 682, 490).lineWidth(1).stroke(); // Border dalam untuk efek double
-                      doc.image("assets/logo.png", 356, 60, { width: 130 }); // Logo di tengah
-                      doc.moveDown(8); // Menyesuaikan posisi turun lebih banyak
-                      doc
-                        .fontSize(25)
-                        .text("Sertifikat Partisipasi", { align: "center" });
-                      doc.moveDown(0.5);
-                      doc
-                        .fontSize(20)
-                        .text(`Telah mengikuti webinar dengan topik:`, {
-                          align: "center",
-                        });
-                      doc
-                        .fontSize(25)
-                        .text(resultske[0].judul_topik, { align: "center" });
-                      doc.moveDown(0.5);
-
-                      // Menambahkan detail kegiatan
-                      doc
-                        .fontSize(15)
-                        .text(
-                          `Tanggal Kegiatan: ${resultske[0].tanggal_kegiatan}`,
-                          { align: "center" }
-                        );
-                      doc
-                        .fontSize(15)
-                        .text(`Waktu Mulai: ${resultske[0].waktu_mulai}`, {
-                          align: "center",
-                        });
-                      doc
-                        .fontSize(15)
-                        .text(`Waktu Selesai: ${resultske[0].waktu_selesai}`, {
-                          align: "center",
-                        });
-                      doc.moveDown(1);
-
-                      // Menambahkan informasi peserta
-                      doc
-                        .fontSize(15)
-                        .text(`Nama: ${siswaResult.nama}`, { align: "center" });
-                      doc.fontSize(15).text(`Email: ${siswaResult.email}`, {
-                        align: "center",
+                      // Adding the background image
+                      doc.image("assets/sertifikat.jpg", 0, 0, {
+                        width: doc.page.width,
+                        height: doc.page.height,
                       });
+                      doc.moveDown(8);
+                      doc
+                        .fontSize(18)
+                        .font("Helvetica-Bold")
+                        .text(`${siswaResult.nama}`, {
+                          align: "center",
+                          valign: "middle",
+                          lineGap: 60,
+                        });
+
+                      doc.fontSize(20).font("Helvetica-Bold").text(`Peserta`, {
+                        align: "center",
+                        valign: "middle",
+                        lineGap: 10,
+                      });
+
+                      doc
+                        .fontSize(16)
+                        .font("Helvetica-Bold")
+                        .text(
+                          `Pada Webinar Series tingkat ${resultske[0].tingkat}`,
+                          {
+                            align: "center",
+                            valign: "middle",
+                            lineGap: 10,
+                          }
+                        );
+
+                      doc
+                        .fontSize(15)
+                        .font("Helvetica-Bold")
+                        .text(`${resultske[0].judul_topik}`, {
+                          align: "center",
+                          valign: "middle",
+                          lineGap: 10,
+                        });
+                      doc.moveDown(6);
+                      doc
+                        .fontSize(18)
+                        .font("Helvetica-Bold")
+                        .text(
+                          `${formatTanggalIndonesia(
+                            resultske[0].tanggal_kegiatan
+                          )}`,
+                          {
+                            align: "center",
+                            valign: "middle",
+                            lineGap: 30,
+                          }
+                        );
 
                       doc.end();
                       console.log(
@@ -569,7 +628,6 @@ class KegiatanModel {
               });
             });
             resolve({ success: true, message: "PDF berhasil dihasilkan" });
-            // Tambahkan resolve di sini
           }
         });
       });
@@ -577,6 +635,29 @@ class KegiatanModel {
     } catch (error) {
       console.error("Error generating PDF:", error);
       throw new Error("Database error: " + error.message);
+    }
+    function formatTanggalIndonesia(tanggal) {
+      const bulanIndonesia = [
+        "Januari",
+        "Februari",
+        "Maret",
+        "April",
+        "Mei",
+        "Juni",
+        "Juli",
+        "Agustus",
+        "September",
+        "Oktober",
+        "November",
+        "Desember",
+      ];
+
+      const date = new Date(tanggal);
+      const hari = date.getDate();
+      const bulan = bulanIndonesia[date.getMonth()];
+      const tahun = date.getFullYear();
+
+      return `${hari} ${bulan} ${tahun}`;
     }
   }
 
@@ -717,7 +798,8 @@ class KegiatanModel {
     tanggal_kegiatan,
     waktu_mulai,
     waktu_selesai,
-    id_semester
+    id_semester,
+    tingkat
   ) {
     try {
       const semesterQuery = `
@@ -737,6 +819,8 @@ class KegiatanModel {
         );
       });
 
+      console.log(tingkat);
+
       const tanggalAwal = moment
         .utc(semesterResult[0].tanggal_awal)
         .tz("Asia/Jakarta")
@@ -752,9 +836,10 @@ class KegiatanModel {
         .toDate();
       if (tanggalKegiatan >= tanggalAwal && tanggalKegiatan <= tanggalAkhir) {
         const query =
-          "UPDATE kegiatan SET judul_topik = ?, link_webinar = ?, tanggal_kegiatan = ?, waktu_mulai = ?, waktu_selesai = ?, id_semester = ? WHERE id_kegiatan = ?";
+          "UPDATE kegiatan SET judul_topik = ?, tingkat=?, link_webinar = ?, tanggal_kegiatan = ?, waktu_mulai = ?, waktu_selesai = ?, id_semester = ? WHERE id_kegiatan = ?";
         const result = await pool.query(query, [
           judul_topik,
+          tingkat,
           link_webinar,
           tanggal_kegiatan,
           waktu_mulai,
