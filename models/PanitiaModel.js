@@ -46,45 +46,54 @@ class PanitiaModel {
     const sheet = workbook.Sheets[sheetName];
     const data = xlsx.utils.sheet_to_json(sheet);
     try {
-      console.log(data.slice(3));
-      for (const row of data.slice(4)) {
+      console.log(data.slice(2));
+      for (const row of data.slice(1)) {
         // Mulai dari baris ke-5
-        const nameColumn = row["Meeting ID"];
+        const nameColumn = row["User Email"];
         let NPM = "0";
-        let Nama = nameColumn;
-        if (nameColumn && nameColumn.includes(" - ")) {
-          const parts = nameColumn.split(" - ");
+        let Nama = row["Name (Original Name)"];
+        const parts = nameColumn.split("@");
           NPM = parts[0].trim();
-          Nama = parts[1].trim();
+          
+          //Nama = parts[1].trim();
+          if (isNaN(NPM)) {
+            NPM = "0";
+          }
+
+          console.log(NPM);
+
+        if (nameColumn && nameColumn.includes("@")) {
+          
         } else if (
-          nameColumn &&
-          nameColumn.includes("(") &&
-          nameColumn.includes(")")
+          row["Name (Original Name)"] &&
+          row["Name (Original Name)"].includes("(") &&
+          row["Name (Original Name)"].includes(")")
         ) {
-          const start = nameColumn.indexOf("(") + 1;
-          const end = nameColumn.indexOf(")");
-          Nama = nameColumn.substring(start, end).trim();
+          const start = row["Name (Original Name)"].indexOf("(") + 1;
+          const end = row["Name (Original Name)"].indexOf(")");
+          Nama = row["Name (Original Name)"].substring(start, end).trim();
         }
 
-        const Email = row["Topic"];
-        const Durasi = row["Start Time"];
-        const Guest = row["Guests"];
+        const Email = row["User Email"];
+        const Durasi = row["Duration (Minutes)"];
+        const Guest = row["Guest"];
         const Status = "Peserta";
         const Semester = "0";
 
-        // console.log(NPM);
-        // console.log(Nama);
-        //console.log(Email);
-        //console.log(Durasi);
+        console.log(nameColumn);
+     
+        console.log(Nama);
+        console.log(Email);
+        console.log(Durasi);
         //console.log(Guest);
         //console.log(Status);
         //console.log(Semester);
         // Check if NPM already exists
         const checkQuery =
           NPM === "0"
-            ? "SELECT COUNT(*) as count FROM daftar_peserta WHERE nama = ?"
+            ? "SELECT COUNT(*) as count FROM daftar_peserta WHERE email = ?"
             : "SELECT COUNT(*) as count FROM daftar_peserta WHERE npm = ?";
-        const queryParam = NPM === "0" ? Nama : NPM;
+        const queryParam = NPM === "0" ? Email : NPM;
         pool.query(checkQuery, [queryParam], (error, results) => {
           if (error) {
             console.error("Error executing query:", error);
@@ -155,7 +164,7 @@ class PanitiaModel {
                                   const count = results[0].count;
                                   if (count === 0) {
                                     console.log("NPM update" + NPM);
-                                    console.log(idpes);
+                                    console.log(idPeserta);
                                     const pass = NPM.toString();
                                     const hashedPassword =
                                       sha1(pass).toString();
@@ -198,9 +207,9 @@ class PanitiaModel {
           } else {
             const checkQuery =
               NPM === "0"
-                ? "SELECT id_peserta FROM daftar_peserta WHERE nama = ?"
+                ? "SELECT id_peserta FROM daftar_peserta WHERE email = ?"
                 : "SELECT id_peserta FROM daftar_peserta WHERE npm = ?";
-            const queryParam = NPM === "0" ? Nama : NPM;
+            const queryParam = NPM === "0" ? Email : NPM;
             pool.query(
               checkQuery,
               [queryParam],
@@ -303,23 +312,46 @@ class PanitiaModel {
                           }
                         );
                       } else {
-                        const updateDetailQuery =
-                          "UPDATE detail_peserta SET duration = duration + ? WHERE id_peserta = ? AND id_kegiatan = ?";
-                        pool.query(
-                          updateDetailQuery,
-                          [Durasi, idPeserta, id_kegiatan],
-                          (updateError, updateResults) => {
-                            if (updateError) {
-                              console.error(
-                                "Error executing detail update query:",
-                                updateError
-                              );
-                              throw new Error(
-                                "Error executing detail update query"
-                              );
-                            }
-                          }
-                        );
+                        const updateDetailQuery = `
+  UPDATE detail_peserta 
+  SET duration = duration + ? 
+  WHERE id_peserta = ? AND id_kegiatan = ?`;
+
+// Function to update with retry on deadlock
+async function updateDetail(duration, idPeserta, idKegiatan, retries = 3) {
+  try {
+    const queryAsync = (query, values) =>
+      new Promise((resolve, reject) => {
+        pool.query(query, values, (error, results) => {
+          if (error) return reject(error);
+          resolve(results);
+        });
+      });
+
+    // Execute the query
+    const updateResults = await queryAsync(updateDetailQuery, [duration, idPeserta, idKegiatan]);
+    console.log('Detail updated successfully:', updateResults);
+    return updateResults; // Return results for further processing if needed
+  } catch (error) {
+    // Log the error
+    console.error('Error executing detail update query:', error);
+
+    // Handle deadlock error
+    if (error.code === 'ER_LOCK_DEADLOCK' && retries > 0) {
+      console.log(`Deadlock detected, retrying... (${3 - retries + 1}/3)`);
+      await new Promise(res => setTimeout(res, 200)); // Add delay before retry
+      return updateDetail(duration, idPeserta, idKegiatan, retries - 1); // Retry the update
+    }
+
+    // If other error or retries exhausted, throw error
+    throw new Error('Error executing detail update query');
+  }
+}
+
+// Example usage
+updateDetail(Durasi, idPeserta, id_kegiatan)
+  .then(() => console.log('Update succeeded'))
+  .catch((err) => console.error('Update failed:', err.message));
                       }
                     }
                   );
@@ -687,7 +719,7 @@ WHERE b.nm_role NOT LIKE '%Narasumber%'`;
 
       const total = countResult;
       const queryData =
-        "SELECT dp.*, dtp.duration, dtp.id_detail_peserta,dtp.id_kegiatan FROM detail_peserta dtp JOIN daftar_peserta_ta_semester dp ON dtp.id_peserta = dp.id_peserta WHERE dtp.id_kegiatan = ?";
+        "SELECT dp.*, SUM(dtp.duration) AS duration, dtp.id_detail_peserta,dtp.id_kegiatan FROM detail_peserta dtp JOIN daftar_peserta_ta_semester dp ON dtp.id_peserta = dp.id_peserta WHERE dtp.id_kegiatan = ? GROUP BY dp.email";
       const dataResult = await new Promise((resolve, reject) => {
         pool.query(queryData, [id], (error, results) => {
           if (error) {

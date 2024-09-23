@@ -516,11 +516,14 @@ class KegiatanModel {
             reject(error);
           } else {
             const querySiswa = `
-                        SELECT dp.*, dtp.duration, dtp.id_detail_peserta, dtp.id_kegiatan 
+                        SELECT dp.*, sum(dtp.duration) as duration, dtp.id_detail_peserta, dtp.id_kegiatan 
                         FROM detail_peserta dtp 
                         JOIN daftar_peserta dp 
                         ON dtp.id_peserta = dp.id_peserta 
                         WHERE dtp.id_kegiatan = ?
+                        and duration > 44
+                        GROUP BY
+												dp.email
                     `;
             const siswaResults = await new Promise((resolve, reject) => {
               pool.query(querySiswa, [id], (error, results, fields) => {
@@ -674,11 +677,14 @@ class KegiatanModel {
             reject(error);
           } else {
             const querySiswa = `
-              SELECT dp.*, dtp.duration, dtp.id_detail_peserta, dtp.id_kegiatan 
-              FROM detail_peserta dtp 
-              JOIN daftar_peserta dp 
-              ON dtp.id_peserta = dp.id_peserta 
-              WHERE dtp.id_kegiatan = ?
+              SELECT dp.*, sum(dtp.duration) as duration, dtp.id_detail_peserta, dtp.id_kegiatan 
+                        FROM detail_peserta dtp 
+                        JOIN daftar_peserta dp 
+                        ON dtp.id_peserta = dp.id_peserta 
+                        WHERE dtp.id_kegiatan = ?
+                        and duration > 44
+                        GROUP BY
+												dp.email
             `;
             const siswaResults = await new Promise((resolve, reject) => {
               pool.query(querySiswa, [id], (error, results, fields) => {
