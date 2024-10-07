@@ -36,7 +36,10 @@ class MenuModel {
 
   static async getAllMenusData(page, limit, search) {
     try {
-      const query = "SELECT COUNT(*) as total FROM menu"; // Hitung total data
+      let query = "SELECT COUNT(*) as total FROM menu";
+      if (search) {
+        query += ` WHERE nm_menu LIKE '%${search}%'`;
+      } // Hitung total data
       const countResult = await new Promise((resolve, reject) => {
         pool.query(query, (error, results, fields) => {
           if (error) {
@@ -50,7 +53,11 @@ class MenuModel {
       const total = countResult;
       const offset = (page - 1) * limit;
 
-      const queryData = `SELECT * FROM menu LIMIT ${limit} OFFSET ${offset}`;
+      let queryData = `SELECT * FROM menu`;
+      if (search) {
+        queryData += ` WHERE nm_menu LIKE '%${search}%'`;
+      }
+      queryData += ` LIMIT ${limit} OFFSET ${offset}`;
       const dataResult = await new Promise((resolve, reject) => {
         pool.query(queryData, (error, results, fields) => {
           if (error) {

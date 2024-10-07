@@ -75,7 +75,7 @@ class KegiatanModel {
 
   static async getKegiatanNarsumData(page, limit, search, id_panitia) {
     try {
-      let query = `SELECT COUNT(*) as total FROM view_daftar_kehadiran where id_panitia = '${id_panitia}' or id_panitia is null`; // Hitung total data
+      let query = `SELECT COUNT(*) as total FROM view_daftar_kehadiran where id_panitia = '${id_panitia}'`; // Hitung total data
       if (search) {
         query += ` and judul_topik LIKE '%${search}%'`;
       }
@@ -94,7 +94,7 @@ class KegiatanModel {
 
       let queryData = `
         SELECT *
-        FROM view_daftar_kehadiran where id_panitia = '${id_panitia}' or id_panitia is null
+        FROM view_daftar_kehadiran where id_panitia = '${id_panitia}' 
       `;
       if (search) {
         queryData += ` and judul_topik LIKE '%${search}%'`;
@@ -867,14 +867,31 @@ class KegiatanModel {
   }
 
   static async deleteKegiatan(id) {
+    const query = "DELETE FROM kegiatan WHERE id_kegiatan = ?";
+    const checkQuery = "SELECT COUNT(*) as count FROM detail_panitia WHERE id_kegiatan = ?";
+    
+
     try {
-      const query = "DELETE FROM kegiatan WHERE id_kegiatan = ?";
-      const result = await pool.query(query, [id]);
-      return { success: true, message: "Semester deleted successfully" };
+      const checkResult = await pool.query(checkQuery, [id]);
+      const count = checkResult[0][0].count;
+
+      if (count > 0) {
+        // Jika ada entri yang ditemukan di detail_panitia
+        return { success: false, message: "Kegiatan tidak dapat dihapus karena sudah digunakan di detail_panitia" };
+       }else{
+        const result = await pool.query(query, [id]);
+        return { success: true, message: "Kegiatan deleted successfully" };
+       } 
+      
+    
     } catch (error) {
-      console.error("Error deleting Semester:", error);
-      throw new Error("Database error: " + error.message);
+      if (error.code === 'ER_ROW_IS_REFERENCED_2') { // MySQL error code for foreign key constraint
+        return { success: false, message: "Cannot delete semester: foreign key constraint fails" };
+      }
+      // Handle other possible errors
+      return { success: false, message: "Error occurred while deleting semester: " + error.message };
     }
+    
   }
 }
 

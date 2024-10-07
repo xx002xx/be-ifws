@@ -97,11 +97,12 @@ class panitiaController {
 
   static async updatePanitiaDetail(req, res) {
     const idPanitia = req.params.id;
-    const { rate_panitia } = req.body;
+    const { rate_panitia, tanggal_bayar } = req.body;
     try {
       const updatedPanitia = await PanitiaModel.updatePanitiaDetail(
         idPanitia,
-        rate_panitia
+        rate_panitia,
+        tanggal_bayar
       );
       res.json(updatedPanitia);
     } catch (error) {

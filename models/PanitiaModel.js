@@ -548,11 +548,11 @@ updateDetail(Durasi, idPeserta, id_kegiatan)
     }
   }
 
-  static async updatePanitiaDetail(id_detail_panitia, rate_panitia) {
+  static async updatePanitiaDetail(id_detail_panitia, rate_panitia, tanggal_bayar) {
     try {
       const query =
-        "UPDATE detail_panitia SET rate_panitia = ? WHERE id_detail_panitia = ?";
-      const result = await pool.query(query, [rate_panitia, id_detail_panitia]);
+        "UPDATE detail_panitia SET rate_panitia = ?, tanggal_bayar = ? WHERE id_detail_panitia = ?";
+      const result = await pool.query(query, [rate_panitia,tanggal_bayar, id_detail_panitia]);
       return { success: true, message: "Panitia updated successfully" };
     } catch (error) {
       console.error("Error updating Panitia:", error);

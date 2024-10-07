@@ -186,6 +186,7 @@ class KegiatanController {
     const { id } = req.params;
     try {
       const deletedKegiatan = await KegiatanModel.deleteKegiatan(id);
+      console.log(deletedKegiatan);
       res.json(deletedKegiatan);
     } catch (error) {
       console.error("Error deleting Kegiatan", error);
