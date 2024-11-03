@@ -126,7 +126,7 @@ class KegiatanModel {
     id_semester
   ) {
     try {
-      let query = `SELECT COUNT(*) as total FROM view_kehadiran_peserta where id_peserta = '${id_peserta}' or id_peserta is null`; // Hitung total data
+      let query = `SELECT COUNT(*) as total FROM view_baru_kehadiran where id_peserta = '${id_peserta}' or id_peserta is null`; // Hitung total data
       if (search) {
         query += ` and judul_topik LIKE '%${search}%'`;
       }
@@ -145,7 +145,7 @@ class KegiatanModel {
 
       let queryData = `
         SELECT *
-        FROM view_kehadiran_peserta where id_peserta = '${id_peserta}' 
+        FROM view_baru_kehadiran where id_peserta = '${id_peserta}' 
       `;
       if (search) {
         queryData += ` and judul_topik LIKE '${search}%'`;
@@ -868,8 +868,8 @@ class KegiatanModel {
 
   static async deleteKegiatan(id) {
     const query = "DELETE FROM kegiatan WHERE id_kegiatan = ?";
-    const checkQuery = "SELECT COUNT(*) as count FROM detail_panitia WHERE id_kegiatan = ?";
-    
+    const checkQuery =
+      "SELECT COUNT(*) as count FROM detail_panitia WHERE id_kegiatan = ?";
 
     try {
       const checkResult = await pool.query(checkQuery, [id]);
@@ -877,21 +877,29 @@ class KegiatanModel {
 
       if (count > 0) {
         // Jika ada entri yang ditemukan di detail_panitia
-        return { success: false, message: "Kegiatan tidak dapat dihapus karena sudah digunakan di detail_panitia" };
-       }else{
+        return {
+          success: false,
+          message:
+            "Kegiatan tidak dapat dihapus karena sudah digunakan di detail_panitia",
+        };
+      } else {
         const result = await pool.query(query, [id]);
         return { success: true, message: "Kegiatan deleted successfully" };
-       } 
-      
-    
+      }
     } catch (error) {
-      if (error.code === 'ER_ROW_IS_REFERENCED_2') { // MySQL error code for foreign key constraint
-        return { success: false, message: "Cannot delete semester: foreign key constraint fails" };
+      if (error.code === "ER_ROW_IS_REFERENCED_2") {
+        // MySQL error code for foreign key constraint
+        return {
+          success: false,
+          message: "Cannot delete semester: foreign key constraint fails",
+        };
       }
       // Handle other possible errors
-      return { success: false, message: "Error occurred while deleting semester: " + error.message };
+      return {
+        success: false,
+        message: "Error occurred while deleting semester: " + error.message,
+      };
     }
-    
   }
 }
 
