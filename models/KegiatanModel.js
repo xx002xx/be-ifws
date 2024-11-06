@@ -126,7 +126,7 @@ class KegiatanModel {
     id_semester
   ) {
     try {
-      let query = `SELECT COUNT(*) as total FROM view_baru_kehadiran where id_peserta = '${id_peserta}' or id_peserta is null`; // Hitung total data
+      let query = `SELECT COUNT(*) as total FROM view_baru_kehadiran where id_peserta = '${id_peserta}' `; // Hitung total data
       if (search) {
         query += ` and judul_topik LIKE '%${search}%'`;
       }
@@ -153,7 +153,7 @@ class KegiatanModel {
       if (id_semester) {
         queryData += ` and id_semester = '${id_semester}'`;
       }
-      queryData += `or id_peserta is null`;
+      queryData += ``;
       queryData += ` LIMIT ${limit} OFFSET ${offset}`;
 
       console.log("Query:", queryData);
