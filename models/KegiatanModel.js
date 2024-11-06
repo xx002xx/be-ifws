@@ -867,37 +867,22 @@ class KegiatanModel {
   }
 
   static async deleteKegiatan(id) {
+    console.log(id);
     const query = "DELETE FROM kegiatan WHERE id_kegiatan = ?";
-    const checkQuery =
-      "SELECT COUNT(*) as count FROM detail_panitia WHERE id_kegiatan = ?";
 
     try {
-      const checkResult = await pool.query(checkQuery, [id]);
-      const count = checkResult[0][0].count;
-
-      if (count > 0) {
-        // Jika ada entri yang ditemukan di detail_panitia
-        return {
-          success: false,
-          message:
-            "Kegiatan tidak dapat dihapus karena sudah digunakan di detail_panitia",
-        };
-      } else {
-        const result = await pool.query(query, [id]);
-        return { success: true, message: "Kegiatan deleted successfully" };
-      }
+      await pool.query(query, [id]);
+      return { success: true, message: "Kegiatan deleted successfully" };
     } catch (error) {
       if (error.code === "ER_ROW_IS_REFERENCED_2") {
-        // MySQL error code for foreign key constraint
         return {
           success: false,
-          message: "Cannot delete semester: foreign key constraint fails",
+          message: "Cannot delete kegiatan: foreign key constraint fails",
         };
       }
-      // Handle other possible errors
       return {
         success: false,
-        message: "Error occurred while deleting semester: " + error.message,
+        message: "Error occurred while deleting kegiatan: " + error.message,
       };
     }
   }
