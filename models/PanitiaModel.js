@@ -53,17 +53,16 @@ class PanitiaModel {
         let NPM = "0";
         let Nama = row["Name (Original Name)"];
         const parts = nameColumn.split("@");
-          NPM = parts[0].trim();
-          
-          //Nama = parts[1].trim();
-          if (isNaN(NPM)) {
-            NPM = "0";
-          }
+        NPM = parts[0].trim();
 
-          console.log(NPM);
+        //Nama = parts[1].trim();
+        if (isNaN(NPM)) {
+          NPM = "0";
+        }
+
+        console.log(NPM);
 
         if (nameColumn && nameColumn.includes("@")) {
-          
         } else if (
           row["Name (Original Name)"] &&
           row["Name (Original Name)"].includes("(") &&
@@ -81,7 +80,7 @@ class PanitiaModel {
         const Semester = "0";
 
         console.log(nameColumn);
-     
+
         console.log(Nama);
         console.log(Email);
         console.log(Durasi);
@@ -317,41 +316,71 @@ class PanitiaModel {
   SET duration = duration + ? 
   WHERE id_peserta = ? AND id_kegiatan = ?`;
 
-// Function to update with retry on deadlock
-async function updateDetail(duration, idPeserta, idKegiatan, retries = 3) {
-  try {
-    const queryAsync = (query, values) =>
-      new Promise((resolve, reject) => {
-        pool.query(query, values, (error, results) => {
-          if (error) return reject(error);
-          resolve(results);
-        });
-      });
+                        // Function to update with retry on deadlock
+                        async function updateDetail(
+                          duration,
+                          idPeserta,
+                          idKegiatan,
+                          retries = 3
+                        ) {
+                          try {
+                            const queryAsync = (query, values) =>
+                              new Promise((resolve, reject) => {
+                                pool.query(query, values, (error, results) => {
+                                  if (error) return reject(error);
+                                  resolve(results);
+                                });
+                              });
 
-    // Execute the query
-    const updateResults = await queryAsync(updateDetailQuery, [duration, idPeserta, idKegiatan]);
-    console.log('Detail updated successfully:', updateResults);
-    return updateResults; // Return results for further processing if needed
-  } catch (error) {
-    // Log the error
-    console.error('Error executing detail update query:', error);
+                            // Execute the query
+                            const updateResults = await queryAsync(
+                              updateDetailQuery,
+                              [duration, idPeserta, idKegiatan]
+                            );
+                            console.log(
+                              "Detail updated successfully:",
+                              updateResults
+                            );
+                            return updateResults; // Return results for further processing if needed
+                          } catch (error) {
+                            // Log the error
+                            console.error(
+                              "Error executing detail update query:",
+                              error
+                            );
 
-    // Handle deadlock error
-    if (error.code === 'ER_LOCK_DEADLOCK' && retries > 0) {
-      console.log(`Deadlock detected, retrying... (${3 - retries + 1}/3)`);
-      await new Promise(res => setTimeout(res, 200)); // Add delay before retry
-      return updateDetail(duration, idPeserta, idKegiatan, retries - 1); // Retry the update
-    }
+                            // Handle deadlock error
+                            if (
+                              error.code === "ER_LOCK_DEADLOCK" &&
+                              retries > 0
+                            ) {
+                              console.log(
+                                `Deadlock detected, retrying... (${
+                                  3 - retries + 1
+                                }/3)`
+                              );
+                              await new Promise((res) => setTimeout(res, 200)); // Add delay before retry
+                              return updateDetail(
+                                duration,
+                                idPeserta,
+                                idKegiatan,
+                                retries - 1
+                              ); // Retry the update
+                            }
 
-    // If other error or retries exhausted, throw error
-    throw new Error('Error executing detail update query');
-  }
-}
+                            // If other error or retries exhausted, throw error
+                            throw new Error(
+                              "Error executing detail update query"
+                            );
+                          }
+                        }
 
-// Example usage
-updateDetail(Durasi, idPeserta, id_kegiatan)
-  .then(() => console.log('Update succeeded'))
-  .catch((err) => console.error('Update failed:', err.message));
+                        // Example usage
+                        updateDetail(Durasi, idPeserta, id_kegiatan)
+                          .then(() => console.log("Update succeeded"))
+                          .catch((err) =>
+                            console.error("Update failed:", err.message)
+                          );
                       }
                     }
                   );
@@ -548,11 +577,19 @@ updateDetail(Durasi, idPeserta, id_kegiatan)
     }
   }
 
-  static async updatePanitiaDetail(id_detail_panitia, rate_panitia, tanggal_bayar) {
+  static async updatePanitiaDetail(
+    id_detail_panitia,
+    rate_panitia,
+    tanggal_bayar
+  ) {
     try {
       const query =
         "UPDATE detail_panitia SET rate_panitia = ?, tanggal_bayar = ? WHERE id_detail_panitia = ?";
-      const result = await pool.query(query, [rate_panitia,tanggal_bayar, id_detail_panitia]);
+      const result = await pool.query(query, [
+        rate_panitia,
+        tanggal_bayar,
+        id_detail_panitia,
+      ]);
       return { success: true, message: "Panitia updated successfully" };
     } catch (error) {
       console.error("Error updating Panitia:", error);
@@ -824,7 +861,7 @@ WHERE b.nm_role NOT LIKE '%Narasumber%'`;
   static async getAllPanitiasDataKehadiranById(id) {
     try {
       const queryCount =
-        "SELECT COUNT(*) as total FROM view_report_kehadiran WHERE status_peserta = ?";
+        "SELECT COUNT(*) as total FROM view_kegiatan WHERE total_duration > 45 AND status_peserta = ?";
       const countResult = await new Promise((resolve, reject) => {
         pool.query(queryCount, [id], (error, results) => {
           if (error) {
@@ -837,7 +874,7 @@ WHERE b.nm_role NOT LIKE '%Narasumber%'`;
 
       const total = countResult;
       const queryData =
-        "SELECT * FROM view_report_kehadiran WHERE status_peserta = ?";
+        "SELECT id_peserta, npm,email,nama,no_semester,status_peserta,COUNT(id_kegiatan) AS jumlah FROM view_kegiatan WHERE total_duration > 45 AND status_peserta = ? GROUP BY id_peserta ";
       const dataResult = await new Promise((resolve, reject) => {
         pool.query(queryData, [id], (error, results) => {
           if (error) {
